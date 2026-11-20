@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ff04a2606ebc6146be3def5f122489c, type: 3}
+  m_Name: GameBalanceConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Baricovats.Prototype2.GameBalanceConfig
+  maxDays: 9
+  maxActionsPerDay: 2
+  blackScreenSeconds: 5
+  food: 50
+  fuel: 50
+  weapons: 50
+  householdGoods: 50
+  frontStrength: 100
+  dailyFoodConsumption: 5
+  dailyHouseholdConsumption: 3
+  boilerFuelCost: 5
+  weaponsEveryThreeDays: 10
+  frontLossWhenWeaponsShort: 15
+  warehouseFoodProduction: 20
+  factoryWeaponsProduction: 15
+  factoryHouseholdProduction: 15
+  boilerDamageWeight: 1.25
+  warehouseDamageWeight: 1
+  factoryDamageWeight: 1
+  artilleryDisabledDaysAfterHit: 1
+  startingReputation: 50
+  lowReputationThreshold: 20
+  highReputationThreshold: 80
+  buildingRefusalChance: 50
+  civilWarehouseFoodBonus: 10
+  defenseWeaponsRequirementReduction: 5
