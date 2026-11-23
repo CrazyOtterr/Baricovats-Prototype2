@@ -8,13 +8,15 @@ namespace Baricovats.Prototype2
     public sealed class Prototype2EventData
     {
         public string id;
+        public string source = "Администрация";
         public string title;
         public string body;
-        public string leftChoice = "ОТКАЗАТЬ";
-        public string rightChoice = "ПРИНЯТЬ";
+        public string leftChoice = "ПРИНЯТЬ";
+        public string rightChoice = "ОТКЛОНИТЬ";
         public string downChoice = "ОТЛОЖИТЬ";
         public bool isMandatory;
         public bool isRepeatable;
+        public bool hasChoices = true;
         public int minimumDay = 1;
         public int maximumDay = 9;
         public Prototype2EventChoice left;

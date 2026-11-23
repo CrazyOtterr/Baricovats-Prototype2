@@ -10,5 +10,6 @@ namespace Baricovats.Prototype2
         public int triggerDay;
         public string followUpEventId;
         public bool isResolved;
+        public int deferralCount;
     }
 }

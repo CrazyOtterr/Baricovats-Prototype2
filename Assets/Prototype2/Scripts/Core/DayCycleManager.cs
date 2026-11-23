@@ -8,6 +8,7 @@ namespace Baricovats.Prototype2
         public DayPhase phase { get; private set; } = DayPhase.Idle;
 
         private GameStateManager stateManager;
+        private bool delayedEventAtDayStart;
         private GameBalanceConfig Config => stateManager != null ? stateManager.config : null;
 
         private void Awake() { Instance = this; stateManager = GetComponent<GameStateManager>(); }
@@ -34,6 +35,7 @@ namespace Baricovats.Prototype2
             state.boilerActivatedToday = false;
             state.mapActionsLocked = false;
             state.isNightTransition = false;
+            delayedEventAtDayStart = false;
             phase = IsArtilleryDay(state.day) ? DayPhase.Artillery : DayPhase.MapActions;
             if (phase == DayPhase.Artillery)
                 ResolveArtillery();
@@ -167,6 +169,13 @@ namespace Baricovats.Prototype2
             if (phase == DayPhase.ExtraEvent)
             {
                 ResolveActiveDelayedEffect(state);
+                if (delayedEventAtDayStart)
+                {
+                    delayedEventAtDayStart = false;
+                    phase = DayPhase.MapActions;
+                    stateManager.NotifyChanged();
+                    return;
+                }
                 StartScheduledEvent();
                 return;
             }
@@ -245,8 +254,25 @@ namespace Baricovats.Prototype2
                 state.mapActionsLocked = true;
                 if (string.IsNullOrEmpty(state.lastStatus))
                     state.lastStatus = "Поражение: критическое состояние города.";
+                state.endingReason = string.IsNullOrEmpty(state.lastStatus)
+                    ? "Критическое состояние города привело к поражению."
+                    : state.lastStatus;
                 phase = DayPhase.Ended;
                 stateManager.NotifyChanged();
+                if (Prototype2EventManager.Instance != null)
+                    Prototype2EventManager.Instance.ShowEnding(EndingId.Defeat);
+                return;
+            }
+
+            if (state.day >= state.maxDays)
+            {
+                state.ending = CalculateVictoryEnding(state);
+                state.campaignEnded = true;
+                state.mapActionsLocked = true;
+                phase = DayPhase.Ended;
+                stateManager.NotifyChanged();
+                if (Prototype2EventManager.Instance != null)
+                    Prototype2EventManager.Instance.ShowEnding(state.ending);
                 return;
             }
 
@@ -269,8 +295,10 @@ namespace Baricovats.Prototype2
                 phase = DayPhase.Ended;
                 state.campaignEnded = true;
                 state.mapActionsLocked = true;
-                state.ending = EndingId.MidReputationVictory;
+                state.ending = CalculateVictoryEnding(state);
                 stateManager.NotifyChanged();
+                if (Prototype2EventManager.Instance != null)
+                    Prototype2EventManager.Instance.ShowEnding(state.ending);
                 yield break;
             }
 
@@ -289,10 +317,24 @@ namespace Baricovats.Prototype2
                 if (effect.isResolved || effect.triggerDay > state.day)
                     continue;
 
-                if (Prototype2EventManager.Instance.TryShowFollowUp(effect.followUpEventId))
+                if (effect.followUpEventId == "__ultimatum__")
+                {
+                    if (Prototype2EventManager.Instance.TryShowUltimatum(effect.sourceEventId, effect.deferralCount))
+                    {
+                        state.activeDelayedEffectId = effect.id;
+                        phase = DayPhase.ExtraEvent;
+                        delayedEventAtDayStart = true;
+                        return;
+                    }
+                    else
+                        effect.isResolved = true;
+                }
+                else if (Prototype2EventManager.Instance.TryShowFollowUp(effect.followUpEventId))
                 {
                     state.activeDelayedEffectId = effect.id;
                     phase = DayPhase.ExtraEvent;
+                    delayedEventAtDayStart = true;
+                    return;
                 }
                 else
                 {
@@ -346,6 +388,26 @@ namespace Baricovats.Prototype2
 
             if (state.daysSinceBoilerActivation >= allowedDays)
                 state.heatingAndWaterAvailable = false;
+        }
+
+        private EndingId CalculateVictoryEnding(CityState state)
+        {
+            int low = Config != null ? Config.lowReputationThreshold : 20;
+            int high = Config != null ? Config.highReputationThreshold : 80;
+            int defense = state.GetReputation(FactionId.DefenseCommittee);
+            int civil = state.GetReputation(FactionId.CivilianCouncil);
+            int union = state.GetReputation(FactionId.NeighborUnion);
+
+            if (defense >= high)
+                return EndingId.DefenseCommittee;
+            if (civil >= high)
+                return EndingId.CivilianCouncil;
+            if (union >= high)
+                return EndingId.NeighborUnion;
+            if (defense < low && civil < low && union < low)
+                return EndingId.LowReputationVictory;
+
+            return EndingId.MidReputationVictory;
         }
 
         private static bool HasDefeat(CityState state)
